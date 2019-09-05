@@ -1,13 +1,18 @@
 package com.example.mgubb.alarmify;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabaseLockedException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+
+import static android.content.Context.ALARM_SERVICE;
 
 /**
  * Created by mgubb on 8/17/2019.
@@ -28,7 +33,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
-        String createTable = "CREATE TABLE " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, " + COL2 + ", " + COL3 + ", " + COL4 + ")";
+        String createTable = "CREATE TABLE " + TABLE_NAME + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, " + COL2 + " , " + COL3 + ", " + COL4 + ")";
         sqLiteDatabase.execSQL(createTable);
         Log.d("DB", "Data base created");
     }
@@ -39,7 +44,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(sqLiteDatabase);
     }
 
-    public boolean addData(String alarmID, String alarmTime, String song){
+    public boolean addData(int alarmID, String alarmTime, String song){
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
 
@@ -77,6 +82,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+    public Cursor getAlarmId(String alarmTime){
+        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+        if(!isEmpty()) {
+            String query = "SELECT " + COL2 + " FROM " + TABLE_NAME + " WHERE " + COL3 + " = '" + alarmTime + "'";
+            Cursor data = sqLiteDatabase.rawQuery(query, null);
+            return data;
+        }else{
+            Cursor data = sqLiteDatabase.rawQuery("", null);
+            return data;
+        }
+    }
+
     public void deleteAllEntries(){
         SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
         sqLiteDatabase.execSQL("DELETE FROM " + TABLE_NAME + " WHERE EXISTS (SELECT * FROM " + TABLE_NAME + ")");
@@ -89,5 +106,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }else{
             return false;
         }
+    }
+
+    public void deleteEntry(String alarmTime){
+        SQLiteDatabase sqLiteDatabase = this.getWritableDatabase();
+        SQLiteDatabase sqLiteDatabase1 = this.getReadableDatabase();
+        Cursor data = sqLiteDatabase1.rawQuery("SELECT * FROM " + TABLE_NAME, null);
+        data.moveToNext();
+
+
+
+        Log.d("DB", "input = " + alarmTime + " database entry = " + data.getString(3));
+        sqLiteDatabase.execSQL("DELETE FROM " + TABLE_NAME + " WHERE " + COL3 + " = '" + alarmTime + "'");
     }
 }

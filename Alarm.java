@@ -15,5 +15,7 @@ public class Alarm extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Toast.makeText(context, "Alarm......", Toast.LENGTH_LONG).show();
 
+        MusicPlayer musicPlayer = new MusicPlayer();
+        musicPlayer.startSong(context);
     }
 }

@@ -1,6 +1,8 @@
 package com.example.mgubb.alarmify;
 
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
@@ -16,6 +18,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -26,7 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
-public class ScrollingActivity extends AppCompatActivity implements View.OnLongClickListener {
+public class ScrollingActivity extends AppCompatActivity {
     static final int ALARM_REQUEST = 1;
     LinearLayout linearLayout;
     DatabaseHelper databaseHelper = new DatabaseHelper(this);
@@ -56,6 +59,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnLongC
             }
         });
 
+
         linearLayout = findViewById(R.id.linearLayout);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
 
@@ -68,20 +72,29 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnLongC
         switch(requestCode){
             case (ALARM_REQUEST) : {
                 if(resultCode == Activity.RESULT_OK){
-                    Toast.makeText(getApplicationContext(), "alarmTime: " + data.getLongExtra("alarmTime", 0), Toast.LENGTH_LONG).show();
+                    //Intent alarmReceiveIntent = getIntent();
+                    //Bundle alarmReceiveExtras = alarmReceiveIntent.getExtras();
+                    //Toast.makeText(getApplicationContext(), "alarmTime: " + data.getLongExtra("alarmTime", 0), Toast.LENGTH_LONG).show();
                     //Toast.makeText(getApplicationContext(), "alarmTime: " + data.getStringExtra("alarmTime") + " alarmId: " + data.getStringExtra("alarmID"), Toast.LENGTH_LONG).show();
-
+                    //Long alarmTime =  alarmReceiveExtras.getLong("ALARM_TIME");
+                    //Long alarmID = alarmReceiveExtras.getLong("ALARM_ID");
                     //Convert alarmtime to 12hour format
                     String standardTime = convertMilliToStandard(data.getLongExtra("alarmTime", 0));
 
+                    Long alarmTime = data.getLongExtra("alarmTime", 0);
+                    int alarmID = data.getIntExtra("alarmID", 0);
+                    Log.d("DB", "alarmTime = " + alarmTime);
+                    Log.d("DB", "alarmID on set = " + alarmID);
+                    String alarmTimeString = alarmTime.toString();
+
                     //add alarm to list
-                    TextView textView = new TextView(getApplicationContext());
-                    textView.setText(standardTime);
+                    Button button = new Button(getApplicationContext());
+                    button.setText(standardTime);
                     Log.d("DB", "here");
-                    databaseHelper.addData(standardTime, standardTime, standardTime);
+                    databaseHelper.addData(alarmID, standardTime, standardTime);
 
                     //textView.setText(String.valueOf (data.getLongExtra("alarmTime", 0)));
-                    linearLayout.addView(textView);
+                    linearLayout.addView(button);
                 }
             }
         }
@@ -114,6 +127,8 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnLongC
             databaseHelper.deleteAllEntries();
             NestedScrollView nestedScrollView = findViewById(R.id.nestedCrollView);
             nestedScrollView.removeAllViews();
+            //TextView textView = nestedScrollView.findViewWithTag("myTag0");
+            ///nestedScrollView.removeView(textView);
             //need to remake list probably change everything to list view later
             return true;
         }
@@ -121,7 +136,7 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnLongC
     }
 
     //adds alarm to to list
-    public void addData(String alarmID, String alarmTime, String song){
+    public void addData(int alarmID, String alarmTime, String song){
         Log.d("DB", "addData");
         boolean insertData = databaseHelper.addData(alarmID, alarmTime, song);
 
@@ -135,30 +150,63 @@ public class ScrollingActivity extends AppCompatActivity implements View.OnLongC
 
     //loads all alarms into text views
     public void loadTable(){
-        //int count = 0;
+        int count = 0;
         Cursor data  = databaseHelper.getData();
         //String[] alarms = new String[(int)databaseHelper.numEntries()];
-        Log.d("DB", "hereq");
 
         if(!databaseHelper.isEmpty()) {
             while (data.moveToNext()) {
                 //alarms[count] = data.getString(3);
-                //count++;
+                count++;
 
 
-                TextView textView = new TextView(getApplicationContext());
+                Button button = new Button(getApplicationContext());
+                button.setText(data.getString(3));
+                button.setId(count);
+                button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Button button = (Button)view;
+                        Log.d("DB", "Button with ID " + view.getId() + " pressed");
+                        deleteAlarm(button.getText().toString());
+                    }
+                });
+
+                /**TextView textView = new TextView(getApplicationContext());
                 textView.setText(data.getString(3));
-                textView.setTag(data.getString(3));
-                textView.setOnLongClickListener(this);
-                linearLayout.addView(textView);
+                textView.setTag("myTag" + count);
+                textView.setOnLongClickListener(this);**/
+                linearLayout.addView(button);
             }
         }
 
         //ArrayAdapter arrayAdapter = new ArrayAdapter<String>(this, R.layout.activity_listview, alarms);
     }
 
-    @Override
-    public boolean onLongClick(View view) {
-        return false;
+
+    //delete specific alarm
+    public void deleteAlarm(String alarmTime){
+        //needs completed
+        //this will retrieve string based on alarm time
+        Cursor alarmCursor = databaseHelper.getAlarmId(alarmTime);
+        Log.d("DB", "alarmCursor has " + alarmCursor.getCount() + " entries");
+        alarmCursor.moveToNext();
+        int id = alarmCursor.getInt(0);
+        Log.d("DB", "alarmId on receive = " + id);
+
+        Intent deleteIntent = new Intent(getApplicationContext(), Alarm.class);
+        AlarmManager am = (AlarmManager)getSystemService(ALARM_SERVICE);
+        //this needs to look the same as intent that started alarm
+        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), id, deleteIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        //XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXSTOPPED HEREXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
+        //this alarm manager passes the correct pi, but the alarm isn't canceled...gotta figure out why
+        //the data base values are negative, but unique. This is probably due to integer wraparound. Might be okay to leave. haven't changed to double because the
+        //  id that gets passed in the intent that starts the alarm has to be an int, not a double
+        //all your alarm buttons say 6 now??? probably passing bad info to the database in a method I can't remember the name of rn. Just trace the info once the time
+        //  selector popup closes
+        am.cancel(pi);
+
+        //this will delete table entry based on alarmtime. should change to alarm ID
+        databaseHelper.deleteEntry(alarmTime);
     }
 }

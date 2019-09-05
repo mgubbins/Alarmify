@@ -25,6 +25,7 @@ public class Pop extends Activity{
     TimePicker timePicker;
     Button btnAlarm, btnSong;
     EditText timeBox;
+    static final int SONG_REQUEST = 2;
     //Opens when new alarm button is clicked
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -56,10 +57,12 @@ public class Pop extends Activity{
         btnAlarm.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent i = new Intent(Pop.this, Alarm.class);
+                Intent i = new Intent(getApplicationContext(), Alarm.class);
                 //Intent to pass back alarm time
                 Intent alarmTimeIntent = new Intent();
-                Intent alarmIdIntent = new Intent();
+                //Intent alarmIdIntent = new Intent();
+                //Intent passAlarmIntent = new Intent();
+                //Bundle alarmIntentExtras = new Bundle();
                 //PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(),0,i,0);
 
                 //Create AlarmManager and Calendar object
@@ -73,8 +76,7 @@ public class Pop extends Activity{
 
                 //ID created from casting alarmTime to int for referencing alarm later
                 final int _id = (int) alarmTime.getTimeInMillis();
-                PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), _id, i, PendingIntent.FLAG_ONE_SHOT);
-
+                PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), _id, i, PendingIntent.FLAG_UPDATE_CURRENT);
                 //non-crucial toast message that displays current time in milli and alarmtime in milli
                 //Toast.makeText(getApplicationContext(), "Current Time:" + Calendar.getInstance().getTimeInMillis()  + "AlarmTime:" + alarmTime.getTimeInMillis(), Toast.LENGTH_LONG).show();
 
@@ -82,14 +84,29 @@ public class Pop extends Activity{
                 am.set(AlarmManager.RTC_WAKEUP, alarmTime.getTimeInMillis(), pi);
 
                 //Passing alarmTime to ScrollingActivity
+                //alarmIntentExtras.putLong("ALARM_TIME", alarmTime.getTimeInMillis());
                 alarmTimeIntent.putExtra("alarmTime", alarmTime.getTimeInMillis());
-                setResult(Activity.RESULT_OK, alarmTimeIntent);
-
+                //alarmIntentExtras.putLong("ALARM_ID", _id);
+                alarmTimeIntent.putExtra("alarmID", _id);
+                //passAlarmIntent.putExtras(alarmIntentExtras);
+                //need to time that popup window was opened in here as alarmID
+                //alarmIdIntent.putExtra("alarmID", );
+                //setResult(Activity.RESULT_OK, passAlarmIntent);
+                //setResult(Activity.RESULT_OK, alarmIdIntent);
                 //Passing alarmTime to ScrollingActivity
                 //alarmIdIntent.putExtra("alarmID" , String.valueOf(_id));
-                //setResult(Activity.RESULT_OK, alarmTimeIntent);
+                setResult(Activity.RESULT_OK, alarmTimeIntent);
 
                 finish();
+            }
+        });
+
+        Button btnSong = (Button) findViewById(R.id.btnSong);
+        btnSong.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(Pop.this, SongActivity.class);
+                startActivityForResult(i, SONG_REQUEST);
             }
         });
     }
